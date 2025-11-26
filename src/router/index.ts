@@ -1,17 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from '@/pages/HomePage.vue';
 import MonitorPage from '@/pages/MonitorPage.vue';
 import ProfitCalculatorPage from '@/pages/ProfitCalculatorPage.vue';
-import InvestmentScenarioPage from '@/pages/InvestmentScenarioPage.vue';
+import SimuladorView from '@/pages/SimuladorView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/home',
-      name: 'home',
-      component: Home,
-    },
     {
       path: '/',
       name: 'monitor',
@@ -23,9 +17,9 @@ const router = createRouter({
       component: ProfitCalculatorPage,
     },
     {
-      path: '/calculo',
-      name: 'calculo',
-      component: InvestmentScenarioPage,
+      path: '/simulador',
+      name: 'simulador',
+      component: SimuladorView,
     },
   ],
 });

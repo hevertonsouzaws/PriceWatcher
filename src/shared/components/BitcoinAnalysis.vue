@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useInvestmentCalculatorStore } from '@/shared/stores/InvestmentCalculatorStore';
 import CurrencyInput from '@/shared/components/CurrencyInput.vue';
 import { formatCurrency } from '../helpers/formatHelper';
 import { useMarketStore } from '../stores/marketStore';
 
-
 const calculatorStore = useInvestmentCalculatorStore();
 const marketStore = useMarketStore();
-marketStore.fetchAllMarketData();
+
+onMounted(() => {
+    marketStore.fetchAllMarketData();
+});
 
 const { initialInvestment, cdiRateAnnual, fiiSharePrice, fiiMonthlyYield, fiiTicker } = storeToRefs(calculatorStore);
 const { bitcoinQuote } = storeToRefs(marketStore);
 
 const isCalculating = computed(() => marketStore.isLoading);
-
 
 const fiiPriceModel = computed({
     get: () => fiiSharePrice.value,
@@ -26,7 +27,6 @@ const fiiYieldModel = computed({
     get: () => fiiMonthlyYield.value,
     set: (val: number) => { fiiMonthlyYield.value = val; }
 });
-
 
 const btcPrice = computed(() => bitcoinQuote.value?.price || 0);
 
@@ -44,63 +44,53 @@ const cdbResults = computed(() => [
 
 const bitcoinResults = computed(() => {
     if (btcPrice.value === 0) return null;
-    return calculatorStore.calculateBitcoin(btcPrice.value);
+    const results = calculatorStore.calculateBitcoin(btcPrice.value);
+
+    return [
+        { label: 'Pessimista', ...results.pessimist },
+        { label: 'Neutro', ...results.neutral },
+        { label: 'Otimista', ...results.optimist },
+    ];
 });
 
-// --- LÓGICA DE ANÁLISE REATIVA DIRETA NA PAGE ---
 const neutralAnalysis = computed(() => {
-    if (!bitcoinResults.value || btcPrice.value <= 0 || initialInvestment.value <= 0) {
+    if (!cdbResults.value || btcPrice.value <= 0 || initialInvestment.value <= 0) {
         return null;
     }
 
-    const neutralScenario = bitcoinResults.value.find((s: any) => s.label === 'Neutro');
+    const periods = [1, 3, 5];
+    const results: any = {};
 
-    if (!neutralScenario) return null;
+    periods.forEach((years, index) => {
+        const cdbResult = cdbResults.value[index];
+        const targetYield = cdbResult ? cdbResult.yield : 0;
 
-    const analyzePeriod = (result: { total: number, yield: number }) => {
-        const projectedYield = result.yield;
+        const analysisResult = calculatorStore.calculateBreakEven(
+            initialInvestment.value,
+            btcPrice.value,
+            targetYield,
+            years
+        );
 
-        if (projectedYield === 0) {
-            return {
-                requiredPrice: btcPrice.value,
-                requiredChange: 0,
-                investmentRequiredYieldPercent: 0,
-                projectedYield: 0
-            };
-        }
+        const key = years === 1 ? 'oneYear' : years === 3 ? 'threeYears' : 'fiveYears';
 
-        // 1. Calcula a Valorização % que o INVESTIMENTO precisa ter (Lucro / Investimento Inicial)
-        // Isso é o quanto o preço do BTC precisa subir para garantir esse lucro.
-        const investmentRequiredYieldRatio = projectedYield / initialInvestment.value;
-
-        // 2. Cálculo do Preço Final do BTC
-        const requiredPrice = btcPrice.value * (1 + investmentRequiredYieldRatio);
-
-        // 3. Variação Absoluta necessária (em R$)
-        const requiredChange = requiredPrice - btcPrice.value;
-
-        return {
-            requiredPrice: requiredPrice,
-            requiredChange: requiredChange,
-            investmentRequiredYieldPercent: investmentRequiredYieldRatio * 100,
-            projectedYield: projectedYield
+        results[key] = {
+            requiredPrice: analysisResult.salePrice,
+            requiredChange: analysisResult.salePrice - btcPrice.value,
+            investmentRequiredYieldPercent: analysisResult.yieldPercentage * 100,
+            projectedYield: targetYield,
         };
-    };
+    });
 
-    return {
-        oneYear: analyzePeriod(neutralScenario.oneYear),
-        threeYears: analyzePeriod(neutralScenario.threeYears),
-        fiveYears: analyzePeriod(neutralScenario.fiveYears),
-    };
+    return results;
 });
-// ------------------------------------------------
 
 const resetInputs = () => {
     initialInvestment.value = 1000.00;
-    cdiRateAnnual.value = 11.5;
-    fiiSharePrice.value = 9.90;
-    fiiMonthlyYield.value = 0.10;
-    fiiTicker.value = '';
+    cdiRateAnnual.value = 115;
+    fiiSharePrice.value = 10.00;
+    fiiMonthlyYield.value = 0.01;
+    fiiTicker.value = 'MXRF11';
 };
 </script>
 
@@ -109,8 +99,7 @@ const resetInputs = () => {
         <div class="w-[90%] mx-auto">
 
             <header class="mb-4">
-                <h1 class="text-3xl font-semibold text-gray-100">Simulador de Cenários de Investimento
-                </h1>
+                <h1 class="text-3xl font-semibold text-gray-100">Simulador de Cenários de Investimento</h1>
                 <p class="text-gray-400 mt-1">Comparação: lucro potencial entre FII, Renda Fixa (CDI) e Bitcoin.</p>
             </header>
 
@@ -134,11 +123,11 @@ const resetInputs = () => {
 
                         <div class="flex justify-between mt-5 gap-5">
                             <div class="">
-                                <label class="text-sm text-gray-400">Taxa Renda Fixa (% a.a.)</label>
+                                <label class="text-sm text-gray-400">Taxa Renda Fixa (% do CDI)</label>
                                 <input type="number" v-model.number="cdiRateAnnual"
                                     class="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-gray-200 focus:ring-gray-500 focus:border-gray-500 text-lg text-right"
                                     step="0.1" />
-                                <p class="text-xs text-gray-500">Ex: 11.5 para 115% do CDI.</p>
+                                <p class="text-xs text-gray-500">Ex: 115 para 115% do CDI.</p>
                             </div>
 
                             <div class="">
@@ -147,7 +136,7 @@ const resetInputs = () => {
                                 <p class="text-xs text-gray-500">Valor unitário da cota.</p>
                             </div>
 
-                            <div class="">
+                            <div class="w-[30%]">
                                 <label class="text-sm text-gray-400">Rendimento Mensal FII (R$)</label>
                                 <CurrencyInput v-model="fiiYieldModel" placeholder="Ex: 0,10" />
                                 <p class="text-xs text-gray-500">Rendimento por cota.</p>
@@ -178,7 +167,7 @@ const resetInputs = () => {
                             <tbody>
 
                                 <tr class="bg-gray-900">
-                                    <td class="p-3 font-bold text-gray-300">Renda Fixa ({{ cdiRateAnnual }}% a.a.)</td>
+                                    <td class="p-3 font-bold text-gray-300">Renda Fixa ({{ cdiRateAnnual }}% CDI)</td>
                                     <td v-for="(result, index) in cdbResults" :key="'cdb-' + index"
                                         class="p-3 text-center">
                                         <span class="font-semibold">{{ formatCurrency(result.total) }}</span>
@@ -211,7 +200,7 @@ const resetInputs = () => {
 
                                         <td class="p-3 text-center">
                                             <span class="font-semibold">{{ formatCurrency(scenario.oneYear.total)
-                                            }}</span>
+                                                }}</span>
                                             <span class="text-xs block"
                                                 :class="{ 'text-green-400': scenario.oneYear.yield > 0, 'text-red-400': scenario.oneYear.yield < 0 }">
                                                 {{ scenario.oneYear.yield > 0 ? '+' : '' }}{{
@@ -221,7 +210,7 @@ const resetInputs = () => {
 
                                         <td class="p-3 text-center">
                                             <span class="font-semibold">{{ formatCurrency(scenario.threeYears.total)
-                                            }}</span>
+                                                }}</span>
                                             <span class="text-xs block"
                                                 :class="{ 'text-green-400': scenario.threeYears.yield > 0, 'text-red-400': scenario.threeYears.yield < 0 }">
                                                 {{ scenario.threeYears.yield > 0 ? '+' : '' }}{{
@@ -231,7 +220,7 @@ const resetInputs = () => {
 
                                         <td class="p-3 text-center">
                                             <span class="font-semibold">{{ formatCurrency(scenario.fiveYears.total)
-                                            }}</span>
+                                                }}</span>
                                             <span class="text-xs block"
                                                 :class="{ 'text-green-400': scenario.fiveYears.yield > 0, 'text-red-400': scenario.fiveYears.yield < 0 }">
                                                 {{ scenario.fiveYears.yield > 0 ? '+' : '' }}{{
@@ -245,18 +234,18 @@ const resetInputs = () => {
                     </div>
                 </section>
 
-                <div v-if="!isCalculating && bitcoinResults"
+                <div v-if="!isCalculating && neutralAnalysis"
                     class="bg-gray-900 border border-gray-700 rounded-xl p-6 mt-8">
                     <h3 class="text-xl font-semibold text-gray-200 mb-6 border-b border-gray-800 pb-2">
-                        Análise Reativa: Variação Necessária do Bitcoin (Cenário Neutro)
+                        Análise Reativa: Variação Necessária do Bitcoin (Igualar CDB)
                     </h3>
 
                     <p class="text-sm text-gray-400 mb-4">
                         Com base no preço atual de **{{ formatCurrency(btcPrice) }}** e no seu investimento de **{{
                             formatCurrency(initialInvestment) }}**,
-                        veja a valorização necessária (Preço Final do BTC) para atingir os lucros projetados no
-                        **Cenário Neutro** da
-                        tabela.
+                        veja a valorização anual composta (CAGR) e preço final do BTC para atingir os lucros projetados
+                        da
+                        **Renda Fixa** ({{ cdiRateAnnual }}% CDI).
                     </p>
 
                     <div class="overflow-x-auto">
@@ -271,7 +260,7 @@ const resetInputs = () => {
                             </thead>
                             <tbody>
                                 <tr class="bg-gray-900 border-t border-gray-700">
-                                    <td class="p-3 font-bold text-gray-300">Lucro Projetado (R$)</td>
+                                    <td class="p-3 font-bold text-gray-300">Lucro Alvo (R$)</td>
                                     <td class="p-3 text-center text-green-400 font-semibold">{{
                                         formatCurrency(neutralAnalysis.oneYear.projectedYield) }}</td>
                                     <td class="p-3 text-center text-green-400 font-semibold">{{
@@ -281,7 +270,7 @@ const resetInputs = () => {
                                 </tr>
 
                                 <tr class="bg-gray-800 border-t border-gray-700">
-                                    <td class="p-3 font-bold text-gray-300">Valorização % Necessária do BTC</td>
+                                    <td class="p-3 font-bold text-gray-300">Taxa CAGR Necessária (% a.a.)</td>
                                     <td class="p-3 text-center text-green-400 font-bold">{{
                                         neutralAnalysis.oneYear.investmentRequiredYieldPercent.toFixed(2) }}%</td>
                                     <td class="p-3 text-center text-green-400 font-bold">{{
@@ -316,11 +305,7 @@ const resetInputs = () => {
                 <p v-else-if="!isCalculating" class="text-center text-gray-500 p-4">Aguardando dados de preço do Bitcoin
                     ou valor de
                     investimento.</p>
-
             </main>
-
         </div>
-
-
     </div>
 </template>

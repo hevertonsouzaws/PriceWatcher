@@ -14,15 +14,12 @@ const openPrice = computed(() => {
     const currentPrice = bitcoinQuote.value.price;
     const change = bitcoinQuote.value.change24h / 100;
     
-    // Calcula o preço de abertura baseado no preço atual e na variação percentual
-    // Fórmula: Preço_Abertura = Preço_Atual / (1 + Variação_Percentual)
     return currentPrice / (1 + change);
 });
 
 const absoluteChange = computed(() => {
     if (!bitcoinQuote.value) return 0;
     
-    // Variação em Reais (Preço Atual - Preço de Abertura)
     return bitcoinQuote.value.price - openPrice.value;
 });
 

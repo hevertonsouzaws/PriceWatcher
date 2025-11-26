@@ -4,30 +4,17 @@ function cleanInput(value: string): number {
     return parseInt(value.replace(/\D/g, '')) || 0;
 }
 
-export function formatCurrency(value: number): string {
-    if (typeof value !== 'number' || isNaN(value)) {
-        return 'R$ 0,00';
-    }
-
-    return value.toLocaleString('pt-BR', {
+export function formatCurrency(value: number, locale: string = 'pt-BR', currency: string = 'BRL'): string {
+    return new Intl.NumberFormat(locale, {
         style: 'currency',
-        currency: 'BRL',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+        currency: currency,
+    }).format(value);
 }
 
-export function formatNumberAsCurrency(valueInCents: number): string {
-    if (typeof valueInCents !== 'number' || isNaN(valueInCents) || valueInCents === 0) {
-        return '';
-    }
-    
-    const valueInBRL = valueInCents / CURRENCY_SCALE;
-
-    return valueInBRL.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    });
+// Corrigido para ser mais genérico, mas mantendo a necessidade de 'options'
+// Esta função NÃO será usada no componente, vamos usar formatCurrency ou formatNumberToBRL.
+export function formatNumberAsCurrency(value: number, options: Intl.NumberFormatOptions, locale: string = 'pt-BR'): string {
+    return new Intl.NumberFormat(locale, options).format(value);
 }
 
 export function processCurrencyInput(inputValue: string): { numericValue: number; formattedValue: string } {

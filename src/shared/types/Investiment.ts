@@ -1,20 +1,24 @@
-export interface IAssetQuote {
-  assetId: string;
-  price: number;
-  change24h: number;
-  lastUpdated: string;
+export interface IBitcoinAnalysisResult {
+    yield: number;
+    yieldPercentage: number;
+    salePrice: number;
 }
 
-export interface IMonitoringTarget {
-  id: string;
-  asset: 'BTC' | 'USD';
-  targetPrice: number;
-  type: 'BUY' | 'SELL';
-  isActive: boolean;
+export interface IInvestmentResult {
+    rate: number;
+    price: number; 
+    yield: number; 
+    total: number; 
 }
 
-export interface IAlertNotification {
-  message: string;
-  timestamp: Date;
-  isRead: boolean;
+export interface IBitcoinScenarioResult {
+    oneYear: IInvestmentResult;
+    threeYears: IInvestmentResult;
+    fiveYears: IInvestmentResult;
+}
+
+export interface ICdbScenarioResult {
+    oneYear: IInvestmentResult;
+    threeYears: IInvestmentResult;
+    fiveYears: IInvestmentResult;
 }
