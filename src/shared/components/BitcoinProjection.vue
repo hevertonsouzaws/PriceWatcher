@@ -93,7 +93,7 @@ const projectionKeys = ['pessimist', 'neutral', 'optimist'] as const;
                     {{ labelMap[label] }} (% a.a.)
                 </label>
 
-                <input type="number" v-model.number="projectionMap[label].model.value"
+                <input type="text" v-model.number="projectionMap[label].model.value"
                     class="w-full p-1.5 bg-gray-900 border rounded-md border-gray-500 text-white text-base font-medium text-right appearance-none"
                     step="1" />
 

@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { IAssetQuote } from '../types/Investiment';
-import { marketDataService, type IDollarQuote } from '../services/marketDataService';
+import type { IBitcoinQuote } from '../services/marketDataService';
+import {  marketDataService, type IDollarQuote } from '../services/marketDataService';
 
 export const useMarketStore = defineStore('market', () => {
-    const bitcoinQuote = ref<IAssetQuote | null>(null);
+    const bitcoinQuote = ref<IBitcoinQuote | null>(null)
     const dollarQuote = ref<IDollarQuote | null>(null);
     const isLoading = ref(false);
     const error = ref<string | null>(null);
@@ -18,7 +18,7 @@ export const useMarketStore = defineStore('market', () => {
                 marketDataService.getBitcoinQuote(),
                 marketDataService.getDollarQuote(),
             ]);
-            
+
             bitcoinQuote.value = btcData;
             dollarQuote.value = usdData;
             return true;

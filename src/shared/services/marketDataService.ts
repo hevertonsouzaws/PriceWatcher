@@ -11,10 +11,15 @@ export interface IDollarQuote {
   lastUpdated: string;
 }
 
+export interface IBitcoinQuote {
+  price: number;
+  change24h: number;
+  lastUpdated: string;
+}
+
 export const marketDataService = {
     async getDollarQuote(): Promise<IDollarQuote> {
         try {
-            // AwesomeAPI: busca a cotação do dólar USD/BRL
             const response = await axios.get(AWESOMEAPI_URL);
             const data = response.data.USDBRL;
 

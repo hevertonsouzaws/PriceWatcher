@@ -39,7 +39,7 @@ onMounted(() => {
             Nenhuma notícia recente encontrada ou ocorreu um erro de conexão.
         </div>
 
-        <div v-else class="space-y-4 overflow-y-auto custom-scrollbar flex-grow">
+        <div v-else class="space-y-4 custom-scrollbar">
             <a v-for="item in articles" :key="item.url" :href="item.url" target="_blank"
                 class="block py-5 p-4 bg-gray-900 hover:bg-gray-900/70 rounded-lg transition duration-150 group border border-gray-500">
                 <p class="text-sm font-medium text-orange-400 group-hover:text-orange-500">

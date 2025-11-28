@@ -1,3 +1,10 @@
+export interface IAssetQuote {
+  assetId: string;
+  price: number;
+  change24h: number;
+  lastUpdated: string;
+}
+
 export interface IBitcoinAnalysisResult {
     yield: number;
     yieldPercentage: number;

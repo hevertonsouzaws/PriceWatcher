@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatCurrency } from '@/shared/helpers/formatHelper';
-import type { IInvestmentResult, IBitcoinScenarioResult, ICdbScenarioResult } from '@/shared/types/Investiment';
+import type { IInvestmentResult } from '@/shared/types/Investiment';
 
 
 defineProps<{
@@ -66,7 +66,7 @@ defineProps<{
 
                     <tr class="bg-gray-900 border-b border-gray-600 hover:bg-gray-800 transition">
                         <td class="p-3 font-medium text-gray-200 border border-gray-600">
-                            FII ({{ fiiTicker }})
+                            FII
                         </td>
                         <td v-for="(result, index) in fiiResults" :key="'fii-' + index"
                             class="p-2 text-center border border-gray-600">

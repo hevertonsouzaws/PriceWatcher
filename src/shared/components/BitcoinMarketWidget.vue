@@ -13,47 +13,44 @@ const openPrice = computed(() => {
     }
     const currentPrice = bitcoinQuote.value.price;
     const change = bitcoinQuote.value.change24h / 100;
-    
+
     return currentPrice / (1 + change);
 });
 
 const absoluteChange = computed(() => {
     if (!bitcoinQuote.value) return 0;
-    
+
     return bitcoinQuote.value.price - openPrice.value;
 });
 
 const changeClass = computed(() => {
-    if (bitcoinQuote.value && bitcoinQuote.value.change24h > 0) return 'text-green-500';
-    if (bitcoinQuote.value && bitcoinQuote.value.change24h < 0) return 'text-red-500';
-    return 'text-gray-400';
+    if (bitcoinQuote.value && bitcoinQuote.value.change24h > 0) return ['text-green-500', 'border-green-600'];
+    if (bitcoinQuote.value && bitcoinQuote.value.change24h < 0) return ['text-red-500', 'border-red-700'];
+    return 'text-gray-200';
 });
 </script>
 
 <template>
-  <div class="w-full bg-gray-900 border border-gray-500 rounded-xl p-6 shadow-xl">
-    <h2 class="text-xl font-semibold text-gray-200 mb-4 border-b border-gray-700 pb-2">₿ Bitcoin (BTC/BRL)</h2>
+    <div class="w-full bg-slate-900 rounded-xl">
+        <div v-if="bitcoinQuote" class="flex justify-between gap-6">
 
-    <div v-if="bitcoinQuote" class="grid grid-cols-2 gap-6">
-        
-        <div class="p-3 border border-gray-700 rounded-lg bg-gray-800/40">
-            <p class="text-sm text-gray-400">Preço Atual</p>
-            <p class="text-xl font-bold text-gray-200 mt-1">
-                {{ formatCurrency(bitcoinQuote.price) }}
-            </p>
+            <div class="p-4 w-full border border-gray-600 rounded-lg">
+                <p class="text-sm text-orange-400">Preço Atual</p>
+                <p class="text-xl font-bold text-white mt-1">
+                    {{ formatCurrency(bitcoinQuote.price) }}
+                </p>
+            </div>
+
+            <div class="p-4 border rounded-lg w-full" :class="changeClass">
+                <p class="text-sm text-gray-400">Variação 24h (R$)</p>
+                <p :class="changeClass" class="text-xl font-bold mt-1">
+                    {{ absoluteChange > 0 ? '+' : '' }}{{ formatCurrency(absoluteChange) }}
+                </p>
+            </div>
         </div>
 
-        <div class="p-3 border border-gray-700 rounded-lg bg-gray-800/40">
-            <p class="text-sm text-gray-400">Variação 24h (R$)</p>
-            <p :class="changeClass" class="text-xl font-bold mt-1">
-                {{ absoluteChange > 0 ? '+' : '' }}{{ formatCurrency(absoluteChange) }}
-            </p>
+        <div v-else class="text-center p-4 text-gray-500">
+            Aguardando dados de Bitcoin...
         </div>
-        
     </div>
-    
-    <div v-else class="text-center p-4 text-gray-500">
-        Aguardando dados de Bitcoin...
-    </div>
-  </div>
 </template>
